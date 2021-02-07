@@ -1,19 +1,17 @@
 {
-  "name": "redis-mongodb",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "name": "node-redis-mongodb",
+  "version": "0.0.0",
+  "private": true,
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node app.js",
+    "dev": "nodemon app.js"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/htsiah/node-redis-mongodb.git"
+  "dependencies": {
+    "express": "~4.16.1",
+    "mongoose": "^5.11.13",
+    "uuid": "^8.3.2"
   },
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/htsiah/node-redis-mongodb/issues"
-  },
-  "homepage": "https://github.com/htsiah/node-redis-mongodb#readme"
+  "devDependencies": {
+    "nodemon": "^2.0.7"
+  }
 }
