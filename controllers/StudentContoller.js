@@ -28,36 +28,63 @@ const getStudentById = async (req, res, next) => {
     res.json(student.toObject({ getters: true }));
 };
 
-const createStudent = (req, res, next) => {
+const createStudent = async (req, res, next) => {
     const { year, standard } = req.body;
 
-    const newCustomer = new StudentModel({
+    const session = await StudentModel.startSession();
+    session.startTransaction();
+
+    const newStudent = new StudentModel({
       id: uuidv4(),
       year: year,
       standard: standard,
-    });
+    })
   
     try {
-      newCustomer.save();
+      const opts = { session };
+      await newStudent.save(opts);
+
+      // commit the changes if everything was successful
+      await session.commitTransaction();
+      session.endSession();
+
     } catch (err) {
+      // If an error occurred, abort the whole transaction and
+      // undo any changes that might have happened
+      await session.abortTransaction();
+      session.endSession();
+
       const error = new Error(' Creating document failed.');
       return next(error);
     }
   
-    res.status(201).json(newCustomer);
+    res.status(201).json(newStudent);
 };
 
 const updateStudentById = async (req, res, next) => {
     const { year, standard } = req.body;
     const id = req.params.id;
-  
+    
+    const session = await StudentModel.startSession();
+    session.startTransaction();
+
     let student;
     try {
-        student = await StudentModel.findByIdAndUpdate(id, {
+      const opts = { session };
+      student = await StudentModel.findByIdAndUpdate(id, {
         year: year,
         standard: standard,
-      });
+      }, opts);
+
+      // commit the changes if everything was successful
+      await session.commitTransaction();
+      session.endSession();
     } catch {
+      // If an error occurred, abort the whole transaction and
+      // undo any changes that might have happened
+      await session.abortTransaction();
+      session.endSession();
+
       const error = new Error('Updating document failed.');
       return next(error);
     }
@@ -68,9 +95,22 @@ const updateStudentById = async (req, res, next) => {
 const deleteStudentById = async (req, res, next) => {
     const id = req.params.id;
     
+    const session = await StudentModel.startSession();
+    session.startTransaction();
+
     try {
-      await StudentModel.findByIdAndDelete(id);
+      const opts = { session };
+      await StudentModel.findByIdAndDelete(id, opts);
+
+      // commit the changes if everything was successful
+      await session.commitTransaction();
+      session.endSession();
     } catch {
+      // If an error occurred, abort the whole transaction and
+      // undo any changes that might have happened
+      await session.abortTransaction();
+      session.endSession();
+
       const error = new Error('Updating document failed.');
       return next(error);
     }
