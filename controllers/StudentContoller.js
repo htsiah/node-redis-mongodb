@@ -1,6 +1,23 @@
 const { v4: uuidv4 } = require('uuid');
+const redis = require('redis')
+const util = require('util');
 
 const StudentModel = require('../models/StudentModel');
+
+// Create and connect redis client to local instance.
+const redisClient = redis.createClient();
+
+// If you are connecting to other server, uncomment below.
+// const redisURL = 'redis://127.0.0.1:6379'
+// const client = redis.createClient(redisURL) 
+
+// Print redis errors to the console
+redisClient.on('error', (err) => {
+  console.log("Error " + err);
+});
+
+// Promisify the client.get method using util.promisify.
+redisClient.get = util.promisify(redisClient.get);
 
 const getStudent = async (req, res, next) => {
     let students;
@@ -17,15 +34,31 @@ const getStudent = async (req, res, next) => {
 const getStudentById = async (req, res, next) => {
     const id = req.params.id;
 
-    let student;
     try {
-        student = await StudentModel.findById(id).sort([['year', 1]]);
+      // If there is cache data in redis, return cache data.
+      // Key formula is [collection]:[documentid]
+      const cacheStudent = await redisClient.get('student:' + id)
+
+      if (cacheStudent) {
+        console.log('Get from cache.')
+        // Remember convert to javascript object
+        return res.json(JSON.parse(cacheStudent)); 
+      }      
+
+      console.log('Get from mongodb server.')
+
+      // If not, find the data in mongodb, store the data to redis and return the data.
+      const student = await StudentModel.findById(id).sort([['year', 1]]);
+      
+      // Since redis can not store javascript object, JSON.stringify before storing.
+      // Set expire in 5 second. 1 day is 60 * 60 * 24. Depends on requirement.
+      redisClient.set('student:' + id, JSON.stringify(student.toObject({ getters: false })), 'EX', 5)
+      
+      res.json(student.toObject({ getters: false }));
     } catch {
       const error = new Error('Failed to get document.');
       return next(error);
     }
-  
-    res.json(student.toObject({ getters: true }));
 };
 
 const createStudent = async (req, res, next) => {
@@ -68,10 +101,9 @@ const updateStudentById = async (req, res, next) => {
     const session = await StudentModel.startSession();
     session.startTransaction();
 
-    let student;
     try {
-      const opts = { session };
-      student = await StudentModel.findByIdAndUpdate(id, {
+      const opts = { session, new: true };
+      const student = await StudentModel.findByIdAndUpdate(id, {
         year: year,
         standard: standard,
       }, opts);
@@ -79,6 +111,15 @@ const updateStudentById = async (req, res, next) => {
       // commit the changes if everything was successful
       await session.commitTransaction();
       session.endSession();
+
+      // Check if there is cache data in redis.
+      // Key formula is [collection]:[documentid]
+      const cacheStudent = await redisClient.get('student:' + id)
+      
+      if (cacheStudent) {
+        redisClient.set('student:' + id, JSON.stringify(student.toObject({ getters: false }), 'EX', 5))
+      }
+      
     } catch {
       // If an error occurred, abort the whole transaction and
       // undo any changes that might have happened

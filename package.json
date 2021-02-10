@@ -9,6 +9,7 @@
   "dependencies": {
     "express": "~4.16.1",
     "mongoose": "^5.11.13",
+    "redis": "^3.0.2",
     "uuid": "^8.3.2"
   },
   "devDependencies": {
