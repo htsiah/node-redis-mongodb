@@ -4,6 +4,7 @@ const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 
 const studentRouters = require('./routes/StudentRoute');
+const teacherRouters = require('./routes/TeacherRoute');
 
 const app = express();
 
@@ -19,6 +20,7 @@ app.use((req, res, next) => {
 app.use(express.static(path.join('public')));
 
 app.use('/api/student', studentRouters);
+app.use('/api/teacher', teacherRouters);
 
 app.use((req, res, next) => {
   res.sendFile(path.resolve(__dirname, 'public', 'index.html'));
