@@ -7,4 +7,6 @@ const teacherSchema = new Schema({
   standard: { type: Number },
 });
 
-module.exports = mongoose.model('teacher', teacherSchema);
+const TeacherModel = mongoose.model('teacher', teacherSchema)
+
+module.exports = TeacherModel;
