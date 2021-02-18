@@ -6,7 +6,7 @@ const { clearCache } = require('../utils/useCacheUtil')
 const getTeacher = async (req, res, next) => {
     try {
       // Search query
-      const query = TeacherModel.find().cache().sort('year').limit(11);    
+      const query = TeacherModel.find().cache().sort('year').limit(10000);    
 
       // Find the data in mongodb, store the data to redis and return the data.
       const teachers = await query.exec();
